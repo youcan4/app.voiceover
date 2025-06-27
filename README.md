@@ -1,1 +1,477 @@
-# app.voiceover
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声読み上げアプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #555;
+            font-size: 1.1em;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            margin-bottom: 0;
+            font-size: 0.9em;
+        }
+        
+        select, input[type="range"] {
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        input[type="range"] {
+            width: 120px;
+        }
+        
+        .range-value {
+            font-size: 0.8em;
+            color: #666;
+            text-align: center;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+        
+        button:hover:before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .play-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .play-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .pause-btn {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+        }
+        
+        .pause-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
+        }
+        
+        .stop-btn {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+        
+        .stop-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.4);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .status.speaking {
+            background: linear-gradient(45deg, #e8f5e8, #c8e6c9);
+            color: #2e7d32;
+            border: 2px solid #4caf50;
+        }
+        
+        .status.paused {
+            background: linear-gradient(45deg, #fff3e0, #ffcc02);
+            color: #f57c00;
+            border: 2px solid #ff9800;
+        }
+        
+        .status.stopped {
+            background: linear-gradient(45deg, #fafafa, #f5f5f5);
+            color: #666;
+            border: 2px solid #ddd;
+        }
+        
+        .char-count {
+            text-align: right;
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 音声読み上げアプリ</h1>
+        
+        <div class="input-section">
+            <label for="textInput">読み上げたいテキストを入力してください：</label>
+            <textarea id="textInput" placeholder="ここにテキストを入力してください...&#10;&#10;例：&#10;こんにちは。これは音声読み上げのテストです。&#10;どんなに長い文章でも読み上げることができます。"></textarea>
+            <div class="char-count">
+                文字数: <span id="charCount">0</span>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="voiceSelect">音声:</label>
+                <select id="voiceSelect">
+                    <option value="">デフォルト</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="rateRange">速度:</label>
+                <input type="range" id="rateRange" min="0.1" max="3" step="0.1" value="1">
+                <div class="range-value" id="rateValue">1.0</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="pitchRange">音程:</label>
+                <input type="range" id="pitchRange" min="0" max="2" step="0.1" value="1">
+                <div class="range-value" id="pitchValue">1.0</div>
+            </div>
+            
+            <div class="control-group">
+                <label for="volumeRange">音量:</label>
+                <input type="range" id="volumeRange" min="0" max="1" step="0.1" value="1">
+                <div class="range-value" id="volumeValue">1.0</div>
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <button id="playBtn" class="play-btn">▶️ 再生</button>
+            <button id="pauseBtn" class="pause-btn">⏸️ 一時停止</button>
+            <button id="stopBtn" class="stop-btn">⏹️ 停止</button>
+        </div>
+        
+        <div id="status" class="status stopped">停止中</div>
+    </div>
+
+    <script>
+        class TextToSpeechApp {
+            constructor() {
+                this.synth = window.speechSynthesis;
+                this.utterance = null;
+                this.isPaused = false;
+                this.isPlaying = false;
+                
+                this.initElements();
+                this.loadVoices();
+                this.bindEvents();
+                this.updateCharCount();
+            }
+            
+            initElements() {
+                this.textInput = document.getElementById('textInput');
+                this.voiceSelect = document.getElementById('voiceSelect');
+                this.rateRange = document.getElementById('rateRange');
+                this.pitchRange = document.getElementById('pitchRange');
+                this.volumeRange = document.getElementById('volumeRange');
+                this.playBtn = document.getElementById('playBtn');
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.status = document.getElementById('status');
+                this.charCount = document.getElementById('charCount');
+                this.rateValue = document.getElementById('rateValue');
+                this.pitchValue = document.getElementById('pitchValue');
+                this.volumeValue = document.getElementById('volumeValue');
+            }
+            
+            loadVoices() {
+                const voices = this.synth.getVoices();
+                this.voiceSelect.innerHTML = '<option value="">デフォルト</option>';
+                
+                voices.forEach((voice, index) => {
+                    if (voice.lang.startsWith('ja')) {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = `${voice.name} (${voice.lang})`;
+                        this.voiceSelect.appendChild(option);
+                    }
+                });
+                
+                // 日本語音声がない場合は全ての音声を表示
+                if (this.voiceSelect.children.length === 1) {
+                    voices.forEach((voice, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = `${voice.name} (${voice.lang})`;
+                        this.voiceSelect.appendChild(option);
+                    });
+                }
+            }
+            
+            bindEvents() {
+                // 音声リストの読み込み完了時
+                this.synth.addEventListener('voiceschanged', () => {
+                    this.loadVoices();
+                });
+                
+                // ボタンイベント
+                this.playBtn.addEventListener('click', () => this.play());
+                this.pauseBtn.addEventListener('click', () => this.pause());
+                this.stopBtn.addEventListener('click', () => this.stop());
+                
+                // スライダーの値表示更新
+                this.rateRange.addEventListener('input', (e) => {
+                    this.rateValue.textContent = e.target.value;
+                });
+                
+                this.pitchRange.addEventListener('input', (e) => {
+                    this.pitchValue.textContent = e.target.value;
+                });
+                
+                this.volumeRange.addEventListener('input', (e) => {
+                    this.volumeValue.textContent = e.target.value;
+                });
+                
+                // 文字数カウント
+                this.textInput.addEventListener('input', () => {
+                    this.updateCharCount();
+                });
+                
+                // キーボードショートカット
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case 'Enter':
+                                e.preventDefault();
+                                this.play();
+                                break;
+                            case ' ':
+                                e.preventDefault();
+                                this.pause();
+                                break;
+                            case 'Escape':
+                                e.preventDefault();
+                                this.stop();
+                                break;
+                        }
+                    }
+                });
+            }
+            
+            updateCharCount() {
+                const count = this.textInput.value.length;
+                this.charCount.textContent = count.toLocaleString();
+            }
+            
+            play() {
+                const text = this.textInput.value.trim();
+                if (!text) {
+                    alert('テキストを入力してください。');
+                    return;
+                }
+                
+                if (this.isPaused) {
+                    this.synth.resume();
+                    this.isPaused = false;
+                    this.updateStatus('speaking', '再生中...');
+                    return;
+                }
+                
+                this.stop(); // 既存の再生を停止
+                
+                this.utterance = new SpeechSynthesisUtterance(text);
+                
+                // 音声設定を適用
+                const voices = this.synth.getVoices();
+                if (this.voiceSelect.value && voices[this.voiceSelect.value]) {
+                    this.utterance.voice = voices[this.voiceSelect.value];
+                }
+                
+                this.utterance.rate = parseFloat(this.rateRange.value);
+                this.utterance.pitch = parseFloat(this.pitchRange.value);
+                this.utterance.volume = parseFloat(this.volumeRange.value);
+                
+                // イベントリスナー
+                this.utterance.onstart = () => {
+                    this.isPlaying = true;
+                    this.updateStatus('speaking', '再生中...');
+                };
+                
+                this.utterance.onend = () => {
+                    this.isPlaying = false;
+                    this.isPaused = false;
+                    this.updateStatus('stopped', '再生完了');
+                };
+                
+                this.utterance.onerror = (event) => {
+                    console.error('音声合成エラー:', event.error);
+                    this.updateStatus('stopped', 'エラーが発生しました');
+                };
+                
+                this.synth.speak(this.utterance);
+            }
+            
+            pause() {
+                if (this.isPlaying && !this.isPaused) {
+                    this.synth.pause();
+                    this.isPaused = true;
+                    this.updateStatus('paused', '一時停止中');
+                } else if (this.isPaused) {
+                    this.synth.resume();
+                    this.isPaused = false;
+                    this.updateStatus('speaking', '再生中...');
+                }
+            }
+            
+            stop() {
+                this.synth.cancel();
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.updateStatus('stopped', '停止中');
+            }
+            
+            updateStatus(state, message) {
+                this.status.className = `status ${state}`;
+                this.status.textContent = message;
+            }
+        }
+        
+        // アプリケーションの初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            new TextToSpeechApp();
+        });
+        
+        // ページを離れる前に音声を停止
+        window.addEventListener('beforeunload', () => {
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+        });
+    </script>
+</body>
+</html>
